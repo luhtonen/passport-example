@@ -52,6 +52,29 @@ apiRoutes.post('/signup', (req, res) => {
   }
 });
 
+// route to authenticate a user (POST http://localhost:8080/api/authenticate)
+apiRoutes.post('/authenticate', (req, res) => {
+  User.findOne({
+    name: req.body.name
+  }, (err, user) => {
+    if (err) {
+      res.send({success: false, msg: 'Authentication failed. User not found'});
+    } else {
+      // check if password matches
+      user.comparePassword(req.body.password, (err, isMatch) => {
+        if (isMatch && !err) {
+          // if user is found and password is right create a token
+          const token = jwt.encode(user, config.secret);
+          // return the information including token as JSON
+          res.json({success: true, token: 'JWT ' + token});
+        } else {
+          res.send({success: false, msg: 'Authentication failed. Wrong password.'});
+        }
+      });
+    }
+  });
+});
+
 // connect the api routes under /api/*
 app.use('/api', apiRoutes);
 
