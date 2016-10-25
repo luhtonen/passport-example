@@ -75,6 +75,41 @@ apiRoutes.post('/authenticate', (req, res) => {
   });
 });
 
+// route to a restricted info (GET http://localhost:8080/api/memberinfo)
+apiRoutes.get('/memberinfo', passport.authenticate('jwt', {session: false}), (req, res) => {
+  const token = getToken(req.headers);
+  if (token) {
+    const decoded = jwt.decode(token, config.secret);
+    User.findOne({
+      name: decoded.name
+    }, (err, user) => {
+      if (err) {
+        throw err;
+      }
+      if (!user) {
+        return res.status(403).send({success: false, msg: 'Authentication failed. User not found.'});
+      } else {
+        res.json({success: true, msg: 'Welcome in the member area ' + user.name + '!'});
+      }
+    });
+  } else {
+    return res.status(403).send({success: false, msg: 'No token provided.'});
+  }
+});
+
+getToken = function (headers) {
+  if (headers && headers.authorization) {
+    var parted = headers.authorization.split(' ');
+    if (parted.length === 2) {
+      return parted[1];
+    } else {
+      return null;
+    }
+  } else {
+    return null;
+  }
+};
+
 // connect the api routes under /api/*
 app.use('/api', apiRoutes);
 
